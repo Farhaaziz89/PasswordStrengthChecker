@@ -2,21 +2,25 @@ import javax.swing.*;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import java.awt.*;
-import java.awt.event.*;
-import java.awt.datatransfer.StringSelection;
 import java.awt.datatransfer.Clipboard;
+import java.awt.datatransfer.StringSelection;
+import java.security.SecureRandom;
 
 public class PasswordStrengthChecker extends JFrame {
 
     private JPasswordField passwordField;
     private JLabel strengthLabel, lengthLabel;
-    private JButton copyButton;
+    private JButton copyButton, suggestButton;
+    private JCheckBox showPassword;
+    private JProgressBar strengthMeter;
     private static final Clipboard CLIPBOARD = Toolkit.getDefaultToolkit().getSystemClipboard();
+    private static final String CHARACTERS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#&()–[{}]:;',?/*~$^+=<>";
+    private static final int PASSWORD_LENGTH = 12;
 
     public PasswordStrengthChecker() {
         createUI();
         setTitle("Password Strength Checker");
-        setSize(420, 200);
+        setSize(480, 250);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
     }
@@ -30,8 +34,14 @@ public class PasswordStrengthChecker extends JFrame {
         passwordField = new JPasswordField(20);
         inputPanel.add(passwordField);
 
+        showPassword = new JCheckBox("Show Password");
+        inputPanel.add(showPassword);
+
         copyButton = new JButton("Copy to Clipboard");
         inputPanel.add(copyButton);
+
+        suggestButton = new JButton("Suggest Strong Password");
+        inputPanel.add(suggestButton);
 
         add(inputPanel);
 
@@ -41,27 +51,35 @@ public class PasswordStrengthChecker extends JFrame {
         lengthLabel = new JLabel("Password Length: 0");
         add(lengthLabel);
 
+        strengthMeter = new JProgressBar(0, 10);
+        add(strengthMeter);
+
+        attachListeners();
+    }
+
+    private void attachListeners() {
         passwordField.getDocument().addDocumentListener(new DocumentListener() {
-            public void changedUpdate(DocumentEvent e) {
-                check();
-            }
-
-            public void removeUpdate(DocumentEvent e) {
-                check();
-            }
-
-            public void insertUpdate(DocumentEvent e) {
-                check();
-            }
-
+            public void changedUpdate(DocumentEvent e) { check(); }
+            public void removeUpdate(DocumentEvent e) { check(); }
+            public void insertUpdate(DocumentEvent e) { check(); }
             private void check() {
                 String password = new String(passwordField.getPassword());
                 updateStrengthLabel(password);
                 updateLengthLabel(password);
+                updateStrengthMeter(password);
+            }
+        });
+
+        showPassword.addActionListener(e -> {
+            if (showPassword.isSelected()) {
+                passwordField.setEchoChar((char) 0);
+            } else {
+                passwordField.setEchoChar('•');
             }
         });
 
         copyButton.addActionListener(e -> copyPasswordToClipboard());
+        suggestButton.addActionListener(e -> suggestStrongPassword());
     }
 
     private void updateStrengthLabel(String password) {
@@ -71,7 +89,7 @@ public class PasswordStrengthChecker extends JFrame {
 
         if (strength >= 10) {
             strengthText = "Very Strong";
-            color = new Color(0, 100, 0); // Dark green
+            color = new Color(0, 100, 0);
         } else if (strength >= 7) {
             strengthText = "Strong";
             color = Color.GREEN;
@@ -86,6 +104,10 @@ public class PasswordStrengthChecker extends JFrame {
 
     private void updateLengthLabel(String password) {
         lengthLabel.setText("Password Length: " + password.length());
+    }
+
+    private void updateStrengthMeter(String password) {
+        strengthMeter.setValue(getPasswordStrength(password));
     }
 
     private int getPasswordStrength(String password) {
@@ -107,6 +129,19 @@ public class PasswordStrengthChecker extends JFrame {
         StringSelection stringSelection = new StringSelection(password);
         CLIPBOARD.setContents(stringSelection, null);
         JOptionPane.showMessageDialog(this, "Password copied to clipboard!", "Success", JOptionPane.INFORMATION_MESSAGE);
+    }
+
+    private void suggestStrongPassword() {
+        SecureRandom random = new SecureRandom();
+        StringBuilder sb = new StringBuilder(PASSWORD_LENGTH);
+
+        for (int i = 0; i < PASSWORD_LENGTH; i++) {
+            sb.append(CHARACTERS.charAt(random.nextInt(CHARACTERS.length())));
+        }
+
+        passwordField.setText(sb.toString());
+        showPassword.setSelected(false);
+        passwordField.setEchoChar('•');
     }
 
     public static void main(String[] args) {
