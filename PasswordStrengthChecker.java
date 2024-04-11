@@ -19,7 +19,7 @@ public class PasswordStrengthChecker extends JFrame {
 
     public PasswordStrengthChecker() {
         createUI();
-        setTitle("Advanced Password Strength Checker");
+        setTitle("Password Strength Checker");
         setSize(480, 250);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
